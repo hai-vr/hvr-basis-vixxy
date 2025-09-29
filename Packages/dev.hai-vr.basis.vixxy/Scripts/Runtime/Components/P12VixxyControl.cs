@@ -42,8 +42,6 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void Awake()
         {
-            _context = orchestrator.Context();
-
             // null avatar can happen in testing scenes, where the control is outside an avatar.
             // We don't want to treat this as being an error.
             _avatarNullable = GetComponentInParent<BasisAvatar>(true);
@@ -57,6 +55,9 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void OnHVRAvatarReady(bool isWearer)
         {
+            orchestrator = VixxySetup.EnsureInitialized(this);
+            _context = orchestrator.Context();
+            
             Address = string.IsNullOrWhiteSpace(address) ? GenerateAddressFromPath() : address;
             _iddress = H12VixxyAddress.AddressToId(Address);
 

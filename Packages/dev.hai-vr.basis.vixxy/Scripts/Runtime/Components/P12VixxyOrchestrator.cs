@@ -14,9 +14,9 @@ namespace HVR.Basis.Vixxy.Runtime
         // - When data arrives, we mark the aggregators and the actuators of that data.
         // - When all data arrived, and we're starting the update cycle, we wake up all aggregators of that data.
 
-        [SerializeField] private AcquisitionService acquisitionService;
-        [LateInjectable] [SerializeField] private P12GadgetRepository gadgetRepository;
-        [SerializeField] private Transform context; // Can be null. If it is null, the orchestrator *is* the context.
+        [SerializeField] public AcquisitionService acquisitionService;
+        [LateInjectable] [SerializeField] public P12GadgetRepository gadgetRepository;
+        [SerializeField] public Transform context; // Can be null. If it is null, the orchestrator *is* the context.
 
         private readonly HashSet<I12VixxyAggregator> _aggregatorsToUpdateThisTick = new();
         private readonly HashSet<I12VixxyActuator> _actuatorsToUpdateThisTick = new();
