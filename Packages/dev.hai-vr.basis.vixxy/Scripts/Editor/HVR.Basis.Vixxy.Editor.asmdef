@@ -1,0 +1,20 @@
+{
+    "name": "HVR.Basis.Vixxy.Editor",
+    "rootNamespace": "",
+    "references": [
+        "BasisSDK",
+        "HVR.Basis.Vixxy",
+        "Basis Framework"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
