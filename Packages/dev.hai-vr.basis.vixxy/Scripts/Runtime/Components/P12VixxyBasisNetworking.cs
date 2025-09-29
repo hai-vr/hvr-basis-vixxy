@@ -1,13 +1,13 @@
 ﻿using System;
 using Basis.Scripts.BasisSdk;
-using Basis.Scripts.Behaviour;
+using HVR.Basis.Comms;
 using HVR.Basis.Comms.HVRUtility;
 using LiteNetLib;
 using UnityEngine;
 
 namespace HVR.Basis.Vixxy.Runtime
 {
-    public class P12VixxyBasisNetworking : BasisAvatarMonoBehaviour, I12VixxyNetworkable
+    public class P12VixxyBasisNetworking : MonoBehaviour, IHVRInitializable, I12VixxyNetworkable
     {
         private const DeliveryMethod MainMessageDeliveryMethod = DeliveryMethod.Sequenced;
 
@@ -17,6 +17,7 @@ namespace HVR.Basis.Vixxy.Runtime
         private ushort _wearerId;
         private bool _isNetworkInitialized;
         private I12Net _relayLateInit;
+        private IHVRTransmitter transmitter;
 
         private void Awake()
         {
@@ -28,14 +29,17 @@ namespace HVR.Basis.Vixxy.Runtime
         private void OnNetworkDataUpdateRequired()
         {
             if (!_isNetworkInitialized) return;
-
         }
 
         internal void Wearer_SubmitFullSnapshot_ToAllNonWearers()
         {
         }
 
-        public virtual void OnNetworkReady(bool IsLocallyOwned)
+        public void OnHVRAvatarReady(bool isWearer)
+        {
+        }
+
+        public void OnHVRReadyBothAvatarAndNetwork(bool isWearer)
         {
             _wearerId = avatar.LinkedPlayerID;
             if (_relayLateInit != null)
@@ -43,17 +47,17 @@ namespace HVR.Basis.Vixxy.Runtime
                 HVRLogging.ProtocolAccident("Received OnNetworkChange more than once in this object's lifetime, this is not normal.");
                 return;
             }
-            _relayLateInit = IsLocallyOwned ? new H12Wearer(this) : new H12NonWearer(this);
+            _relayLateInit = isWearer ? new H12Wearer(this) : new H12NonWearer(this);
             _relayLateInit.OnNetworkInitialized();
         }
 
-        public virtual void OnNetworkMessageReceived(ushort RemoteUser, byte[] unsafeBuffer, DeliveryMethod DeliveryMethod, bool IsADifferentAvatarLocally)
+        public virtual void OnNetworkMessageReceived(ushort RemoteUser, byte[] unsafeBuffer, DeliveryMethod DeliveryMethod)
         {
             if (_relayLateInit != null) _relayLateInit.OnNetworkMessageReceived(User(RemoteUser), unsafeBuffer, DeliveryMethod);
             else HVRLogging.ProtocolAccident("Received OnNetworkMessageReceived before any OnNetworkChange was received.");
         }
 
-        public virtual void OnNetworkMessageServerReductionSystem(byte[] unsafeBuffer, bool IsADifferentAvatarLocally)
+        public virtual void OnNetworkMessageServerReductionSystem(byte[] unsafeBuffer)
         {
             if (_relayLateInit != null) _relayLateInit.OnNetworkMessageServerReductionSystem(unsafeBuffer);
             else HVRLogging.ProtocolAccident("Received OnNetworkMessageServerReductionSystem before any OnNetworkChange was received.");
@@ -61,7 +65,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void SubmitReliable(byte[] buffer)
         {
-            NetworkMessageSend(buffer, MainMessageDeliveryMethod);
+            transmitter.NetworkMessageSend(buffer, MainMessageDeliveryMethod);
         }
 
         private H12AvatarContextualUser User(ushort user)

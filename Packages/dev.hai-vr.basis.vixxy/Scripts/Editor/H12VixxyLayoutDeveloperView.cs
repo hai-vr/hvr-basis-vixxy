@@ -43,6 +43,7 @@ namespace HVR.Basis.Vixxy.Editor
                 HaiEFCommon.ColoredBackgroundVoid(true, P12VixxyControlEditor.RuntimeColorOK, () =>
                 {
                     EditorGUILayout.BeginVertical(H12UiHelpers.GroupBoxStyle);
+                    EditorGUILayout.Toggle(nameof(P12VixxyControl.IsInitialized), my.IsInitialized);
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.WasOnAvatarReadyCalled), my.WasOnAvatarReadyCalled);
                     if (!my.WasOnAvatarReadyCalled)
                     {

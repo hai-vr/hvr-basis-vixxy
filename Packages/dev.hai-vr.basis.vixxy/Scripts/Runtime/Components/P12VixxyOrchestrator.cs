@@ -302,7 +302,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void RequireNetworked(string address, float bakedDefaultValue, P12VixxyNetDataUsage netDataUsage)
         {
-            _networkable.RequireNetworked(address, bakedDefaultValue, netDataUsage);
+            // _networkable.RequireNetworked(address, bakedDefaultValue, netDataUsage);
         }
     }
 }

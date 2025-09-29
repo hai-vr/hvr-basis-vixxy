@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Reflection;
 using Basis.Scripts.BasisSdk;
+using HVR.Basis.Comms;
 using UnityEngine;
 
 namespace HVR.Basis.Vixxy.Runtime
@@ -12,7 +13,7 @@ namespace HVR.Basis.Vixxy.Runtime
     /// - Similarly to animation, it is fine for the user to define rules that cannot apply (i.e. setting a material property on a type that isn't a Renderer,
     ///   referencing a field on a type that cannot exist, etc.); do not treat those as errors,<br/>
     /// - Do not treat anything else defensively than the above points, which are expectations of this specific system.
-    public partial class P12VixxyControl : MonoBehaviour, I12VixxyActuator
+    public partial class P12VixxyControl : MonoBehaviour, I12VixxyActuator, IHVRInitializable
     {
         // Licensing notes:
         // Portions of the code below originally comes from portions of a proprietary software that I (Haï~) am the author of,
@@ -34,6 +35,7 @@ namespace HVR.Basis.Vixxy.Runtime
         [NonSerialized] internal string Address;
         [NonSerialized] internal P12VixxyRememberScope Remember;
         [NonSerialized] internal string RememberTagNullable;
+        [NonSerialized] internal bool IsInitialized;
         [NonSerialized] internal bool Networked;
         [NonSerialized] internal bool WasOnAvatarReadyCalled;
         [NonSerialized] internal bool IsWearer;
@@ -46,6 +48,15 @@ namespace HVR.Basis.Vixxy.Runtime
             // We don't want to treat this as being an error.
             _avatarNullable = GetComponentInParent<BasisAvatar>(true);
 
+            if (_avatarNullable == null)
+            {
+                // If there is NO avatar, then we run the Avatar Ready callback ourselves, because this means we're in a test scene.
+                OnHVRAvatarReady(false);
+            }
+        }
+
+        public void OnHVRAvatarReady(bool isWearer)
+        {
             Address = string.IsNullOrWhiteSpace(address) ? GenerateAddressFromPath() : address;
             _iddress = H12VixxyAddress.AddressToId(Address);
 
@@ -104,8 +115,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
             if (_avatarNullable != null)
             {
-                _avatarNullable.OnAvatarReady -= OnAvatarReady;
-                _avatarNullable.OnAvatarReady += OnAvatarReady;
+                OnAvatarReady(isWearer);
             }
             else
             {
@@ -118,10 +128,22 @@ namespace HVR.Basis.Vixxy.Runtime
                 var netDataUsage = P12VixxyNetDataUsage.Bit; // TODO: This depends on the type of control.
                 orchestrator.RequireNetworked(Address, _bakedDefaultValue, netDataUsage);
             }
+
+            IsInitialized = true;
+            if (isActiveAndEnabled)
+            {
+                _registeredActuator = orchestrator.RegisterActuator(_iddress, this, OnImplicitAddressUpdated);
+            }
+        }
+
+        public void OnHVRReadyBothAvatarAndNetwork(bool isWearer)
+        {
         }
 
         private void OnDestroy()
         {
+            if (!IsInitialized) return;
+            
             orchestrator.UnregisterMenu(_menuElement);
             sample.OnValueChanged -= OnValueChanged;
             if (_avatarNullable != null)
@@ -364,13 +386,19 @@ namespace HVR.Basis.Vixxy.Runtime
         private void OnEnable()
         {
             _previousValue = float.MinValue + 1.23456789f;
-            _registeredActuator = orchestrator.RegisterActuator(_iddress, this, OnImplicitAddressUpdated);
+            if (IsInitialized && _registeredActuator == null)
+            {
+                _registeredActuator = orchestrator.RegisterActuator(_iddress, this, OnImplicitAddressUpdated);
+            }
         }
 
         private void OnDisable()
         {
-            orchestrator.UnregisterActuator(_registeredActuator);
-            _registeredActuator = default;
+            if (IsInitialized)
+            {
+                orchestrator.UnregisterActuator(_registeredActuator);
+            }
+            _registeredActuator = null;
         }
 
         private void OnImplicitAddressUpdated(float value)

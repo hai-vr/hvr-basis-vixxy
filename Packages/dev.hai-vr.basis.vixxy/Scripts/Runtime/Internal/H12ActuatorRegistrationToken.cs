@@ -2,7 +2,7 @@
 
 namespace HVR.Basis.Vixxy.Runtime
 {
-    public struct H12ActuatorRegistrationToken
+    public class H12ActuatorRegistrationToken
     {
         public string registeredAddress;
         public int registeredIddress;
