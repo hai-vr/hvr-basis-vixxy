@@ -4,7 +4,7 @@ using System.Reflection;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Hai.Project12.HaiSystems.Supporting
+namespace HVR.Basis.Vixxy.Runtime
 {
     public class H12LateInjector
     {

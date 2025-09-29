@@ -1,12 +1,9 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
-using Hai.Project12.HaiSystems.Supporting;
-using Hai.Project12.InteractionElements.Runtime;
-using Hai.Project12.UserInterfaceElements.Runtime;
 using HVR.Basis.Comms;
 using UnityEngine;
 
-namespace Hai.Project12.Vixxy.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     /// There is one instance of this **per avatar** or **per world object**.
     [DefaultExecutionOrder(-10)] // FIXME: acquisitionService can be null if the dependents become awake before this

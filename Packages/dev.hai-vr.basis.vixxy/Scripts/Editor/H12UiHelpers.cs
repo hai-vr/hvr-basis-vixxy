@@ -1,4 +1,4 @@
-﻿namespace Hai.Project12.HaiSystems.Editor
+﻿namespace HVR.Basis.Vixxy.Editor
 {
     public static class H12UiHelpers
     {

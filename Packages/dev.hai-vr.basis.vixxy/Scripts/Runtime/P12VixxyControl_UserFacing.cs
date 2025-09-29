@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using Hai.Project12.UserInterfaceElements.Runtime;
 using UnityEngine;
 
-namespace Hai.Project12.Vixxy.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     public partial class P12VixxyControl
     {

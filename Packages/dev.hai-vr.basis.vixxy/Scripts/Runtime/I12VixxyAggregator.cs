@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Hai.Project12.Vixxy.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     public interface I12VixxyAggregator
     {

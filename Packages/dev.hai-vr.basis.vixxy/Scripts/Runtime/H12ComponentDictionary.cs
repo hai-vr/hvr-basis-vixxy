@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Hai.Project12.HaiSystems.Supporting
+namespace HVR.Basis.Vixxy.Runtime
 {
     public static class H12ComponentDictionary
     {

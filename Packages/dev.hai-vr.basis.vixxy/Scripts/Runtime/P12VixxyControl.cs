@@ -1,13 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using Basis.Scripts.BasisSdk;
-using Hai.Project12.HaiSystems.Supporting;
-using Hai.Project12.UserInterfaceElements.Runtime;
 using UnityEngine;
 
-namespace Hai.Project12.Vixxy.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     /// UGC Rule: GameObjects and Components referenced by this class should be treated defensively as being UGC at runtime:<br/>
     /// - There may be null values in the arrays, as they may be unreliable user input or removed as part of a build process (e.g. EditorOnly),<br/>

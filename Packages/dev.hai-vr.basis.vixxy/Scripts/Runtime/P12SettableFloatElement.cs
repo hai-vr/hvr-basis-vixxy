@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Hai.Project12.UserInterfaceElements.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     [CreateAssetMenu(fileName = "P12SettableFloatElement", menuName = "HVR.Basis/Project12/Settable Float Element")]
     public class P12SettableFloatElement : ScriptableObject

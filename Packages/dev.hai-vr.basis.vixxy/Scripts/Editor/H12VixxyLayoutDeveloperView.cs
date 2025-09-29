@@ -1,11 +1,9 @@
 ﻿using System;
-using Hai.EmbeddedFunctions.Editor.ExternalLicense;
-using Hai.Project12.Vixxy.Runtime;
-using Hai.Project12.HaiSystems.Editor;
+using HVR.Basis.Vixxy.Runtime;
 using UnityEditor;
 using UnityEngine;
 
-namespace Hai.Project12.Vixxy.Editor
+namespace HVR.Basis.Vixxy.Editor
 {
     public class H12VixxyLayoutDeveloperView
     {

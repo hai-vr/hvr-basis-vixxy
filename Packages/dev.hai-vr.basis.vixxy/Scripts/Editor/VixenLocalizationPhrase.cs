@@ -1,4 +1,4 @@
-﻿namespace Hai.Project12.Vixxy.Editor
+﻿namespace HVR.Basis.Vixxy.Editor
 {
 public static class VixenLocalizationPhrase
     {

@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
-namespace Hai.Project12.InteractionElements.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     public class P12GadgetRepository : MonoBehaviour
     {

@@ -1,6 +1,6 @@
 ﻿using HVR.Basis.Comms;
 
-namespace Hai.Project12.Vixxy.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     public struct H12ActuatorRegistrationToken
     {

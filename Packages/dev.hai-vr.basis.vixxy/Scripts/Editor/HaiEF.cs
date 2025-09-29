@@ -4,7 +4,7 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 
-namespace Hai.EmbeddedFunctions.Editor.ExternalLicense
+namespace HVR.Basis.Vixxy.Editor
 {
     // HEF V0.0.9991
     public static class HaiEFCommon

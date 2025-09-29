@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace Hai.Project12.HaiSystems.Supporting
+namespace HVR.Basis.Vixxy.Runtime
 {
     /// Denotes a field that can always be injected before Play Mode is even entered,
     /// because the instance always comes alongside it with the same scene or prefab.

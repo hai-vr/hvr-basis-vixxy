@@ -4,7 +4,7 @@ using System.Security.Cryptography;
 using System.Text;
 using UnityEngine;
 
-namespace Hai.Project12.HaiSystems.Supporting
+namespace HVR.Basis.Vixxy.Runtime
 {
     public static class H12Utilities
     {

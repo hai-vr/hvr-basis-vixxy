@@ -1,13 +1,11 @@
 ﻿using System;
 using Basis.Scripts.BasisSdk;
 using Basis.Scripts.Behaviour;
-using Hai.Project12.HaiSystems.Supporting;
-using Hai.Project12.Vixxy.Runtime;
 using HVR.Basis.Comms.HVRUtility;
 using LiteNetLib;
 using UnityEngine;
 
-namespace Hai.Project12.VixxyBasisNet.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     public class P12VixxyBasisNetworking : BasisAvatarMonoBehaviour, I12VixxyNetworkable
     {

@@ -1,9 +1,8 @@
 ﻿using System.Collections.Generic;
-using Hai.Project12.HaiSystems.Supporting;
 using HVR.Basis.Comms;
 using UnityEngine;
 
-namespace Hai.Project12.Vixxy.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     public class P12VixxyAggregator : MonoBehaviour, I12VixxyAggregator
     {

@@ -2,14 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
-using Hai.Project12.HaiSystems.Editor;
-using Hai.Project12.Vixxy.Runtime;
+using HVR.Basis.Vixxy.Runtime;
 using UnityEditor;
 using UnityEditorInternal;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
-namespace Hai.Project12.Vixxy.Editor
+namespace HVR.Basis.Vixxy.Editor
 {
     internal class H12VixxyLayoutChangeProperties
     {

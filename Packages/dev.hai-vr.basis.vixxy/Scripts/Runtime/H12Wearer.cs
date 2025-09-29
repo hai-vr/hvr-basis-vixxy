@@ -1,7 +1,7 @@
 ﻿using HVR.Basis.Comms.HVRUtility;
 using LiteNetLib;
 
-namespace Hai.Project12.VixxyBasisNet.Runtime
+namespace HVR.Basis.Vixxy.Runtime
 {
     internal class H12Wearer : I12Net
     {
