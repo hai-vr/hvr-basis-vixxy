@@ -10,7 +10,7 @@ namespace HVR.Basis.Vixxy.Editor
         private const string AddPropertyOfTypeLabel = "+ Add Property of type {0}";
         private const string AddSubjectLabel = "+ Add Subject";
         private const string MsgAddressIsOptional = "Address is completely optional, we will generate one for you. If you need explicit control by external programs, then do specify one.";
-        private const string MsgOnAvatarReadyNotInvoked = "OnAvatarReady was not called on the avatar of this component while we were listening.\nThis may be because this is a test scene and not a loaded avatar. If this isn't the case, this is a proper error.";
+        private const string MsgAvatarReadyNotApplied = "AvatarReady was not applied on the avatar of this component while we were listening.\nThis may be because this is a test scene and not a loaded avatar. If this isn't the case, this is a proper error.";
         private const string MsgPropertyFailedToResolve = "This property has failed to resolve. Reason: {0}";
         private const string RuntimeBakedDataLabel = "Runtime Baked Data";
         private const string SampleFromLabel = "Sample from";
@@ -44,13 +44,18 @@ namespace HVR.Basis.Vixxy.Editor
                 {
                     EditorGUILayout.BeginVertical(H12UiHelpers.GroupBoxStyle);
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.IsInitialized), my.IsInitialized);
-                    EditorGUILayout.Toggle(nameof(P12VixxyControl.WasOnAvatarReadyCalled), my.WasOnAvatarReadyCalled);
-                    if (!my.WasOnAvatarReadyCalled)
+                    EditorGUILayout.Toggle(nameof(P12VixxyControl.WasAvatarReadyApplied), my.WasAvatarReadyApplied);
+                    if (!my.WasAvatarReadyApplied)
                     {
-                        HaiEFCommon.ColoredBackgroundVoid(true, Color.white, () => { EditorGUILayout.HelpBox(MsgOnAvatarReadyNotInvoked, MessageType.Error); });
+                        HaiEFCommon.ColoredBackgroundVoid(true, Color.white, () => { EditorGUILayout.HelpBox(MsgAvatarReadyNotApplied, MessageType.Error); });
                     }
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.IsWearer), my.IsWearer);
                     EditorGUILayout.TextField(nameof(P12VixxyControl.Address), my.Address);
+                    var slider = EditorGUILayout.Slider(my.GadgetElement.storedValue, 0f, 1f);
+                    if (slider != my.GadgetElement.storedValue)
+                    {
+                        my.GadgetElement.storedValue = slider;
+                    }
                     EditorGUILayout.EndVertical();
                 });
             }

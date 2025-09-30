@@ -28,9 +28,9 @@ namespace HVR.Basis.Vixxy.Runtime
         private void Awake()
         {
             acquisitionService = AcquisitionService.SceneInstance;
-            _iddressA = H12VixxyAddress.AddressToId(addressA);
-            _iddressB = H12VixxyAddress.AddressToId(addressB);
-            _outputIddress = H12VixxyAddress.AddressToId(outputAddress);
+            _iddressA = HVRAddress.AddressToId(addressA);
+            _iddressB = HVRAddress.AddressToId(addressB);
+            _outputIddress = HVRAddress.AddressToId(outputAddress);
 
             if (string.IsNullOrEmpty(addressA) || string.IsNullOrEmpty(addressB) || string.IsNullOrEmpty(outputAddress))
             {
@@ -44,7 +44,7 @@ namespace HVR.Basis.Vixxy.Runtime
             orchestrator.RegisterAggregator(_iddressA, this);
             orchestrator.RegisterAggregator(_iddressB, this);
             // FIXME: Address registration should be inside the orchestrator
-            acquisitionService.RegisterAddresses(new []{ addressA, addressB }, OnAddressUpdated);
+            acquisitionService.RegisterAddresses(new []{ _iddressA, _iddressB }, OnAddressUpdated);
         }
 
         private void OnDisable()
@@ -52,26 +52,22 @@ namespace HVR.Basis.Vixxy.Runtime
             orchestrator.UnregisterAggregator(_iddressA, this);
             orchestrator.UnregisterAggregator(_iddressB, this);
             // FIXME: Address registration should be inside the orchestrator
-            acquisitionService.UnregisterAddresses(new []{ addressA, addressB }, OnAddressUpdated);
+            acquisitionService.UnregisterAddresses(new []{ _iddressA, _iddressB }, OnAddressUpdated);
         }
 
-        private void OnAddressUpdated(string whichAddress, float value)
+        private void OnAddressUpdated(int inputIddress, float value)
         {
-            // TODO: Make a different callback for each, so that we don't have to convert the address.
-            // TODO: Or, modify AcquisitionService to use H12VixxyAddress (maybe move H12VixxyAddress to HVRAddress).
-            int iddress;
-            if (whichAddress == addressA)
+            if (inputIddress == _iddressA)
             {
                 a = value;
-                iddress = _iddressA;
             }
-            else
+            else if (inputIddress == _iddressB)
             {
                 b = value;
-                iddress = _iddressB;
             }
-
-            orchestrator.PassAddressUpdated(iddress);
+            else return;
+            
+            orchestrator.PassAddressUpdated(inputIddress);
         }
 
         public bool TryAggregate(out IEnumerable<I12VixxyAggregator> aggregators, out IEnumerable<I12VixxyActuator> actuators)

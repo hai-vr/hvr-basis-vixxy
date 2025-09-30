@@ -28,7 +28,7 @@ namespace HVR.Basis.Vixxy.Runtime
         private Transform _context;
         private H12ActuatorRegistrationToken _registeredActuator;
 
-        private P12SettableFloatElement _menuElement;
+        [NonSerialized] internal P12SettableFloatElement GadgetElement;
         private float _previousValue;
         private float _bakedDefaultValue;
 
@@ -37,7 +37,7 @@ namespace HVR.Basis.Vixxy.Runtime
         [NonSerialized] internal string RememberTagNullable;
         [NonSerialized] internal bool IsInitialized;
         [NonSerialized] internal bool Networked;
-        [NonSerialized] internal bool WasOnAvatarReadyCalled;
+        [NonSerialized] internal bool WasAvatarReadyApplied;
         [NonSerialized] internal bool IsWearer;
 
         public void Awake()
@@ -59,7 +59,7 @@ namespace HVR.Basis.Vixxy.Runtime
             _context = orchestrator.Context();
             
             Address = string.IsNullOrWhiteSpace(address) ? GenerateAddressFromPath() : address;
-            _iddress = H12VixxyAddress.AddressToId(Address);
+            _iddress = HVRAddress.AddressToId(Address);
 
             switch (mode)
             {
@@ -105,23 +105,23 @@ namespace HVR.Basis.Vixxy.Runtime
             _bakedDefaultValue = defaultValue; // TODO: The baked value depends on the level of detail in the control, and the type of control.
 
             // TODO: This is temporary code
-            _menuElement = ScriptableObject.CreateInstance<P12SettableFloatElement>();
-            _menuElement.localizedTitle = gameObject.name;
-            _menuElement.min = 0f;
-            _menuElement.max = 1f;
-            _menuElement.displayAs = P12SettableFloatElement.P12UnitDisplayKind.Toggle; // TODO: This depends on the type of control.
-            _menuElement.defaultValue = _bakedDefaultValue;
-            _menuElement.storedValue = _bakedDefaultValue;
-            sample = _menuElement;
+            GadgetElement = ScriptableObject.CreateInstance<P12SettableFloatElement>();
+            GadgetElement.localizedTitle = gameObject.name;
+            GadgetElement.min = 0f;
+            GadgetElement.max = 1f;
+            GadgetElement.displayAs = P12SettableFloatElement.P12UnitDisplayKind.Toggle; // TODO: This depends on the type of control.
+            GadgetElement.defaultValue = _bakedDefaultValue;
+            GadgetElement.storedValue = _bakedDefaultValue;
+            sample = GadgetElement;
 
             if (_avatarNullable != null)
             {
-                OnAvatarReady(isWearer);
+                ApplygAvatarReady(isWearer);
             }
             else
             {
                 // A lack of avatar probably means we're in a testing scene, so add it to the menu.
-                orchestrator.RegisterMenu(_menuElement);
+                orchestrator.RegisterGadget(GadgetElement);
             }
 
             if (Networked)
@@ -145,21 +145,17 @@ namespace HVR.Basis.Vixxy.Runtime
         {
             if (!IsInitialized) return;
             
-            orchestrator.UnregisterMenu(_menuElement);
+            orchestrator.UnregisterGadget(GadgetElement);
             sample.OnValueChanged -= OnValueChanged;
-            if (_avatarNullable != null)
-            {
-                _avatarNullable.OnAvatarReady -= OnAvatarReady;
-            }
         }
 
-        private void OnAvatarReady(bool isOwner)
+        private void ApplygAvatarReady(bool isOwner)
         {
-            WasOnAvatarReadyCalled = true;
+            WasAvatarReadyApplied = true;
             IsWearer = isOwner;
             if (isOwner)
             {
-                orchestrator.RegisterMenu(_menuElement);
+                orchestrator.RegisterGadget(GadgetElement);
             }
             sample.OnValueChanged -= OnValueChanged;
             sample.OnValueChanged += OnValueChanged;

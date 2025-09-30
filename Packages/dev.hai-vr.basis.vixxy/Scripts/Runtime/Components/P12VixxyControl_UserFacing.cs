@@ -28,9 +28,6 @@ namespace HVR.Basis.Vixxy.Runtime
 
         // Menu and Networking
 
-        /// If the menu type is bool-like, we use isActiveByDefault.
-        [SerializeField] public bool isActiveByDefault;
-        /// If the menu type is float-like, we use defaultValue.
         [SerializeField] public float defaultValue;
 
         /// When the control mode is set to Simplified, we ignore some of the internally serialized values of this control and use

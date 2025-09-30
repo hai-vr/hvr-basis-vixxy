@@ -55,7 +55,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void PassAddressUpdated(string address)
         {
-            PassAddressUpdated(H12VixxyAddress.AddressToId(address));
+            PassAddressUpdated(HVRAddress.AddressToId(address));
         }
 
         public void PassAddressUpdated(int iddress)
@@ -165,7 +165,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public H12ActuatorRegistrationToken RegisterActuator(string address, I12VixxyActuator actuator, ImplicitAddressUpdated implicitAddressUpdatedFn)
         {
-            return RegisterActuator(H12VixxyAddress.AddressToId(address), actuator, implicitAddressUpdatedFn);
+            return RegisterActuator(HVRAddress.AddressToId(address), actuator, implicitAddressUpdatedFn);
         }
 
         public H12ActuatorRegistrationToken RegisterActuator(int iddress, I12VixxyActuator actuator, ImplicitAddressUpdated implicitAddressUpdatedFn)
@@ -184,9 +184,9 @@ namespace HVR.Basis.Vixxy.Runtime
             _anythingNeedsUpdating = true;
             _actuatorsToUpdateThisTick.Add(actuator);
 
-            var address = H12VixxyAddress.ResolveKnownAddressFromId(iddress);
+            var address = HVRAddress.ResolveKnownAddressFromId(iddress);
             AcquisitionService.AddressUpdated addressUpdatedFn = (_, value) => implicitAddressUpdatedFn.Invoke(value);
-            acquisitionService.RegisterAddresses(new [] { address }, addressUpdatedFn);
+            acquisitionService.RegisterAddresses(new [] { HVRAddress.AddressToId(address) }, addressUpdatedFn);
 
             return new H12ActuatorRegistrationToken
             {
@@ -203,12 +203,12 @@ namespace HVR.Basis.Vixxy.Runtime
             {
                 existingActuator.Remove(actuatorRegistrationToken.registeredActuator);
             }
-            acquisitionService.UnregisterAddresses(new []{ actuatorRegistrationToken.registeredAddress }, actuatorRegistrationToken.registeredCallback);
+            acquisitionService.UnregisterAddresses(new []{ HVRAddress.AddressToId(actuatorRegistrationToken.registeredAddress) }, actuatorRegistrationToken.registeredCallback);
         }
 
         public void RegisterAggregator(string address, I12VixxyAggregator actuator)
         {
-            RegisterAggregator(H12VixxyAddress.AddressToId(address), actuator);
+            RegisterAggregator(HVRAddress.AddressToId(address), actuator);
         }
 
         public void RegisterAggregator(int iddress, I12VixxyAggregator actuator)
@@ -230,7 +230,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void UnregisterAggregator(string address, I12VixxyAggregator aggregator)
         {
-            UnregisterAggregator(H12VixxyAddress.AddressToId(address), aggregator);
+            UnregisterAggregator(HVRAddress.AddressToId(address), aggregator);
         }
 
         public void UnregisterAggregator(int iddress, I12VixxyAggregator aggregator)
@@ -284,12 +284,12 @@ namespace HVR.Basis.Vixxy.Runtime
             // _stagedComponents.Add(component);
         }
 
-        public void RegisterMenu(P12SettableFloatElement element)
+        public void RegisterGadget(P12SettableFloatElement element)
         {
             gadgetRepository.Add(element);
         }
 
-        public void UnregisterMenu(P12SettableFloatElement element)
+        public void UnregisterGadget(P12SettableFloatElement element)
         {
             gadgetRepository.Remove(element);
         }
@@ -297,7 +297,7 @@ namespace HVR.Basis.Vixxy.Runtime
         public void ___SubmitToAcquisitionService(string address, float newValue)
         {
             // TODO: This is temporary.
-            acquisitionService.Submit(address, newValue);
+            acquisitionService.Submit(HVRAddress.AddressToId(address), newValue);
         }
 
         public void RequireNetworked(string address, float bakedDefaultValue, P12VixxyNetDataUsage netDataUsage)

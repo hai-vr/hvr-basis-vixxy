@@ -5,7 +5,7 @@ namespace HVR.Basis.Vixxy.Runtime
 {
     public class P12GadgetRepository : MonoBehaviour
     {
-        private readonly List<ScriptableObject> _repository = new List<ScriptableObject>();
+        private readonly List<ScriptableObject> _repository = new();
 
         public event GadgetListChanged OnGadgetListChanged;
         public delegate void GadgetListChanged();
@@ -27,8 +27,7 @@ namespace HVR.Basis.Vixxy.Runtime
             }
         }
 
-        // TODO: Give a read-only view of that list
-        public List<ScriptableObject> GadgetView()
+        public IEnumerable<ScriptableObject> GadgetView()
         {
             return _repository;
         }
