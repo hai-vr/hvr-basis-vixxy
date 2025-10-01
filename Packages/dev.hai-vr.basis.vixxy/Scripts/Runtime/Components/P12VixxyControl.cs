@@ -39,6 +39,7 @@ namespace HVR.Basis.Vixxy.Runtime
         [NonSerialized] internal bool Networked;
         [NonSerialized] internal bool WasAvatarReadyApplied;
         [NonSerialized] internal bool IsWearer;
+        [NonSerialized] internal bool AlsoExecutesWhenDisabled;
 
         public void Awake()
         {
@@ -55,11 +56,16 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void OnHVRAvatarReady(bool isWearer)
         {
+            // We need to do this here too, because if the VixxyControl is by default OFF, we need this to initalize ourselves. (WasAvatarReadyApplied is separate from IsInitialized)
+            _avatarNullable = GetComponentInParent<BasisAvatar>(true);
+            
             orchestrator = VixxySetup.EnsureInitialized(this);
             _context = orchestrator.Context();
             
             Address = string.IsNullOrWhiteSpace(address) ? GenerateAddressFromPath() : address;
             _iddress = HVRAddress.AddressToId(Address);
+
+            AlsoExecutesWhenDisabled = !onlyExecuteWhenEnabled;
 
             switch (mode)
             {
@@ -116,7 +122,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
             if (_avatarNullable != null)
             {
-                ApplygAvatarReady(isWearer);
+                ApplyAvatarReady(isWearer);
             }
             else
             {
@@ -131,7 +137,7 @@ namespace HVR.Basis.Vixxy.Runtime
             }
 
             IsInitialized = true;
-            if (isActiveAndEnabled)
+            if (isActiveAndEnabled || AlsoExecutesWhenDisabled)
             {
                 _registeredActuator = orchestrator.RegisterActuator(_iddress, this, OnImplicitAddressUpdated);
             }
@@ -144,12 +150,17 @@ namespace HVR.Basis.Vixxy.Runtime
         private void OnDestroy()
         {
             if (!IsInitialized) return;
+
+            if (_registeredActuator != null && AlsoExecutesWhenDisabled)
+            {
+                orchestrator.UnregisterActuator(_registeredActuator);
+            }
             
             orchestrator.UnregisterGadget(GadgetElement);
             sample.OnValueChanged -= OnValueChanged;
         }
 
-        private void ApplygAvatarReady(bool isOwner)
+        private void ApplyAvatarReady(bool isOwner)
         {
             WasAvatarReadyApplied = true;
             IsWearer = isOwner;
@@ -382,6 +393,9 @@ namespace HVR.Basis.Vixxy.Runtime
 
         private void OnEnable()
         {
+            // If this was true, we have already enabled this in OnHVRAvatarReady.
+            if (AlsoExecutesWhenDisabled) return;
+            
             _previousValue = float.MinValue + 1.23456789f;
             if (IsInitialized && _registeredActuator == null)
             {
@@ -391,6 +405,8 @@ namespace HVR.Basis.Vixxy.Runtime
 
         private void OnDisable()
         {
+            if (AlsoExecutesWhenDisabled) return;
+            
             if (IsInitialized)
             {
                 orchestrator.UnregisterActuator(_registeredActuator);

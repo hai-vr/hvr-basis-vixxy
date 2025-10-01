@@ -11,8 +11,8 @@ namespace HVR.Basis.Vixxy.Runtime
     {
         private const DeliveryMethod MainMessageDeliveryMethod = DeliveryMethod.Sequenced;
 
-        [SerializeField] private P12VixxyOrchestrator orchestrator;
-        [SerializeField] private BasisAvatar avatar;
+        [SerializeField] public P12VixxyOrchestrator orchestrator;
+        [SerializeField] public BasisAvatar avatar;
 
         private ushort _wearerId;
         private bool _isNetworkInitialized;

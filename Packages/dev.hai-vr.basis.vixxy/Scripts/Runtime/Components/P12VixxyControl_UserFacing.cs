@@ -42,6 +42,10 @@ namespace HVR.Basis.Vixxy.Runtime
         [SerializeField] internal string rememberTag = "";
         /// IF NOT ADVANCED MENU MODE: If set to true, this value will be sent to other users whenever it is changed, or when the avatar loads.
         [SerializeField] internal bool networked = true;
+        
+        /// If true, we only run the logic of this control if it's enabled. By default, this is false, so that users can put a toggle control
+        /// directly inside the component hierarchy that is being toggled OFF.
+        [SerializeField] internal bool onlyExecuteWhenEnabled = false;
     }
 
     [Serializable]
@@ -109,7 +113,7 @@ namespace HVR.Basis.Vixxy.Runtime
     {
         /// When the avatar loads, the value is always the default.
         DoNotRemember,
-        /// We remember the value for this address, only in this specific avatar.
+        /// We remember the value for this address, only in this specific avatar. The name of the avatar is used to determine if it's the same avatar.
         RememberInThisAvatar,
         /// We remember the value for this address, only across controls which share the same rememberTag value.
         RememberInThisTag,
