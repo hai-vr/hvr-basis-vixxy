@@ -56,6 +56,7 @@ namespace HVR.Basis.Vixxy.Editor
                     {
                         my.GadgetElement.storedValue = slider;
                     }
+                    EditorGUILayout.Toggle(nameof(P12VixxyControl.AlsoExecutesWhenDisabled), my.AlsoExecutesWhenDisabled);
                     EditorGUILayout.EndVertical();
                 });
             }

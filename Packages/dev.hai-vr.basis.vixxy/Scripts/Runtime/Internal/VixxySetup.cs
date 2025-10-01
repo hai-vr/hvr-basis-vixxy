@@ -1,4 +1,5 @@
-﻿using HVR.Basis.Comms;
+﻿using Basis.Scripts.BasisSdk;
+using HVR.Basis.Comms;
 using UnityEngine;
 
 namespace HVR.Basis.Vixxy.Runtime
@@ -16,7 +17,7 @@ namespace HVR.Basis.Vixxy.Runtime
             var existingOrchestrator = avatar.GetComponentInChildren<P12VixxyOrchestrator>(true);
             if (existingOrchestrator != null) return existingOrchestrator;
 
-            var orchestrator = CreateOrchestrator(avatar.transform, "HVRAvatarVixxyOrchestrator", avatar.transform);
+            var orchestrator = CreateOrchestrator(avatar.transform, "Generated__VixxyAvatar", avatar.transform);
             return orchestrator;
         }
 
@@ -32,7 +33,7 @@ namespace HVR.Basis.Vixxy.Runtime
                 }
             }
 
-            var sceneOrchestrator = CreateOrchestrator(null, "HVRSceneVixxyOrchestrator", null);
+            var sceneOrchestrator = CreateOrchestrator(null, "Generated__VixxyScene", null);
             return sceneOrchestrator;
         }
 
@@ -49,6 +50,13 @@ namespace HVR.Basis.Vixxy.Runtime
             sceneOrchestrator.acquisitionService = AcquisitionService.SceneInstance;
             sceneOrchestrator.gadgetRepository = gadgetRepository;
             sceneOrchestrator.context = contextNullable;
+            if (contextNullable != null)
+            {
+                var networking = go.AddComponent<P12VixxyBasisNetworking>();
+                networking.orchestrator = sceneOrchestrator;
+                networking.avatar = contextNullable.GetComponent<BasisAvatar>();
+                sceneOrchestrator.networking = networking;
+            }
             go.SetActive(true);
             return sceneOrchestrator;
         }

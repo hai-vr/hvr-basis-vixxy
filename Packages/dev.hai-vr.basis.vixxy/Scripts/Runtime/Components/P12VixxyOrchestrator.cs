@@ -17,6 +17,8 @@ namespace HVR.Basis.Vixxy.Runtime
         [SerializeField] public AcquisitionService acquisitionService;
         [LateInjectable] [SerializeField] public P12GadgetRepository gadgetRepository;
         [SerializeField] public Transform context; // Can be null. If it is null, the orchestrator *is* the context.
+        
+        [SerializeField] public P12VixxyBasisNetworking networking;
 
         private readonly HashSet<I12VixxyAggregator> _aggregatorsToUpdateThisTick = new();
         private readonly HashSet<I12VixxyActuator> _actuatorsToUpdateThisTick = new();
@@ -30,8 +32,6 @@ namespace HVR.Basis.Vixxy.Runtime
         // private readonly HashSet<Component> _stagedComponents = new();
 
         private readonly HashSet<I12VixxyAggregator> _workAggregators = new();
-
-        private I12VixxyNetworkable _networkable;
 
         public event NetworkDataUpdateRequired OnNetworkDataUpdateRequired;
         public delegate void NetworkDataUpdateRequired();
@@ -302,7 +302,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void RequireNetworked(string address, float bakedDefaultValue, P12VixxyNetDataUsage netDataUsage)
         {
-            // _networkable.RequireNetworked(address, bakedDefaultValue, netDataUsage);
+            // networking.RequireNetworked(address, bakedDefaultValue, netDataUsage);
         }
     }
 }
