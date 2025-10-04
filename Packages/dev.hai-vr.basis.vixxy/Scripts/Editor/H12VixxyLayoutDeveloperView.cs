@@ -36,6 +36,12 @@ namespace HVR.Basis.Vixxy.Editor
             {
                 EditorGUILayout.HelpBox(MsgAddressIsOptional, MessageType.Info);
             }
+            
+            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(P12VixxyControl.hasThreeOrMoreChoices)));
+            if (my.hasThreeOrMoreChoices)
+            {
+                EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(P12VixxyControl.numberOfChoices)));
+            }
             EditorGUI.EndDisabledGroup();
 
             if (isPlaying)
@@ -51,11 +57,16 @@ namespace HVR.Basis.Vixxy.Editor
                     }
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.IsWearer), my.IsWearer);
                     EditorGUILayout.TextField(nameof(P12VixxyControl.Address), my.Address);
-                    var slider = EditorGUILayout.Slider(my.GadgetElement.storedValue, 0f, 1f);
-                    if (slider != my.GadgetElement.storedValue)
+                    if (my.IsInitialized)
                     {
-                        my.GadgetElement.storedValue = slider;
+                        var slider = EditorGUILayout.Slider(my.GadgetElement.storedValue, my.GadgetElement.min, my.GadgetElement.max);
+                        if (slider != my.GadgetElement.storedValue)
+                        {
+                            my.GadgetElement.storedValue = slider;
+                        }
                     }
+                    EditorGUILayout.Toggle(nameof(P12VixxyControl.HasMoreThanTwoChoices), my.HasMoreThanTwoChoices);
+                    EditorGUILayout.IntField(nameof(P12VixxyControl.ActualNumberOfChoices), my.ActualNumberOfChoices);
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.AlsoExecutesWhenDisabled), my.AlsoExecutesWhenDisabled);
                     EditorGUILayout.EndVertical();
                 });
@@ -127,9 +138,12 @@ namespace HVR.Basis.Vixxy.Editor
                 }
 
                 ButtonToAddProperty(propertiesSp, "float", () => new P12VixxyProperty<float>());
-                ButtonToAddProperty(propertiesSp, "Color", () => new P12VixxyProperty<Color>());
+                ButtonToAddProperty(propertiesSp, "Color", () => new P12VixxyPropertyColor());
                 ButtonToAddProperty(propertiesSp, "Vector4", () => new P12VixxyProperty<Vector4>());
                 ButtonToAddProperty(propertiesSp, "Vector3", () => new P12VixxyProperty<Vector3>());
+                ButtonToAddProperty(propertiesSp, "Material", () => new P12VixxyProperty<Material>());
+                ButtonToAddProperty(propertiesSp, "Mesh", () => new P12VixxyProperty<Mesh>());
+                ButtonToAddProperty(propertiesSp, "OBSOLETE_Color", () => new P12VixxyProperty<Color>());
 
                 EditorGUILayout.EndVertical();
             }
@@ -158,15 +172,26 @@ namespace HVR.Basis.Vixxy.Editor
             var managedReferenceValue = propertySp.managedReferenceValue;
             var managedReferenceValueType = managedReferenceValue.GetType();
 
-            var isGenericVixxyProperty = false;
+            var inheritsFromVixxyProperty = false;
             Type genericType = null;
-            if (managedReferenceValueType.IsGenericType && managedReferenceValueType.GetGenericTypeDefinition() == typeof(P12VixxyProperty<>))
             {
-                genericType = managedReferenceValueType.GetGenericArguments()[0];
-                isGenericVixxyProperty = true;
+                var currentType = managedReferenceValueType;
+                while (currentType != null && currentType != typeof(object))
+                {
+                    if (currentType.IsGenericType && currentType.GetGenericTypeDefinition() == typeof(P12VixxyProperty<>))
+                    {
+                        inheritsFromVixxyProperty = true;
+                        if (genericType == null)
+                        {
+                            genericType = currentType.GetGenericArguments()[0];
+                        }
+                        break;
+                    }
+                    currentType = currentType.BaseType;
+                }
             }
 
-            if (isGenericVixxyProperty)
+            if (inheritsFromVixxyProperty)
             {
                 EditorGUILayout.LabelField($"[{propertyIndex}] Property of type {genericType.Name}", EditorStyles.boldLabel);
             }
@@ -193,10 +218,30 @@ namespace HVR.Basis.Vixxy.Editor
             EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.variant)));
             EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.propertyName)));
             EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.flip)));
-            if (isGenericVixxyProperty)
+            if (inheritsFromVixxyProperty)
             {
-                EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyProperty<object>.unbound)));
-                EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyProperty<object>.bound)));
+                var choicesSp = propertySp.FindPropertyRelative(nameof(P12VixxyProperty<object>.choices));
+                if (my.hasThreeOrMoreChoices)
+                {
+                    if (choicesSp.arraySize < my.numberOfChoices)
+                    {
+                        choicesSp.arraySize = my.numberOfChoices;
+                    }
+                    for (var choiceIndex = 0; choiceIndex < my.numberOfChoices; choiceIndex++)
+                    {
+                        EditorGUILayout.PropertyField(choicesSp.GetArrayElementAtIndex(choiceIndex), new GUIContent($"Value for #{choiceIndex}"));
+                    }
+                }
+                else
+                {
+                    EditorGUILayout.PropertyField(choicesSp.GetArrayElementAtIndex(P12VixxyPropertyBase.InactiveIndex), new GUIContent("Inactive"));
+                    EditorGUILayout.PropertyField(choicesSp.GetArrayElementAtIndex(P12VixxyPropertyBase.ActiveIndex), new GUIContent("Active"));
+                }
+            }
+
+            if (managedReferenceValueType == typeof(P12VixxyPropertyColor))
+            {
+                EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyColor.interpolation)));
             }
 
             if (isPlaying)

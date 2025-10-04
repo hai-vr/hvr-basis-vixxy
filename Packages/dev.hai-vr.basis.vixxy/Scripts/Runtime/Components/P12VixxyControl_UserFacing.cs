@@ -16,6 +16,9 @@ namespace HVR.Basis.Vixxy.Runtime
         [SerializeField] internal string address = "";
 
         [SerializeField] internal P12SettableFloatElement sample;
+        
+        [SerializeField] public bool hasThreeOrMoreChoices;
+        [SerializeField] public int numberOfChoices = 3;
 
         [SerializeField] internal P12VixxyActivation[] activations = Array.Empty<P12VixxyActivation>();
         [SerializeField] internal P12VixxySubject[] subjects = Array.Empty<P12VixxySubject>();
@@ -61,6 +64,7 @@ namespace HVR.Basis.Vixxy.Runtime
         public Component component; // To toggle a GameObject, provide the Transform instead. It makes things easier as GameObject is not a component.
         public ActivationThreshold threshold;
         public bool whenActive;
+        public bool[] choices;
     }
 
     [Serializable]
@@ -124,13 +128,18 @@ namespace HVR.Basis.Vixxy.Runtime
     [Serializable]
     public class P12VixxyProperty<T> : P12VixxyPropertyBase
     {
-        public T bound;
-        public T unbound;
+        public T[] choices = new T[2];
+
+        public T InactiveValue => choices[InactiveIndex];
+        public T ActiveValue => choices[ActiveIndex];
     }
 
     [Serializable]
     public class P12VixxyPropertyBase : I12VixxyProperty
     {
+        public const int InactiveIndex = 0;
+        public const int ActiveIndex = 1;
+
         // TODO: It might be relevant to use another approach than getting animatable properties,
         // since we have control over the system. It doesn't have to piggyback on the animation APIs.
         public string fullClassName;
@@ -161,5 +170,18 @@ namespace HVR.Basis.Vixxy.Runtime
 
     interface I12VixxyProperty
     {
+    }
+    
+    [Serializable]
+    public class P12VixxyPropertyColor : P12VixxyProperty<Color>
+    {
+        public P12VixxyPropertyColorInterpolation interpolation;
+    }
+
+    [Serializable]
+    public enum P12VixxyPropertyColorInterpolation
+    {
+        Oklab,
+        Unity
     }
 }

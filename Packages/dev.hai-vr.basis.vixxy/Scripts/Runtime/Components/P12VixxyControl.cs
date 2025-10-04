@@ -33,6 +33,8 @@ namespace HVR.Basis.Vixxy.Runtime
         private float _bakedDefaultValue;
 
         [NonSerialized] internal string Address;
+        [NonSerialized] internal bool HasMoreThanTwoChoices;
+        [NonSerialized] internal int ActualNumberOfChoices;
         [NonSerialized] internal P12VixxyRememberScope Remember;
         [NonSerialized] internal string RememberTagNullable;
         [NonSerialized] internal bool IsInitialized;
@@ -64,6 +66,10 @@ namespace HVR.Basis.Vixxy.Runtime
             
             Address = string.IsNullOrWhiteSpace(address) ? GenerateAddressFromPath() : address;
             _iddress = HVRAddress.AddressToId(Address);
+
+            var hasMoreThanTwoChoices = hasThreeOrMoreChoices && numberOfChoices > 2;
+            HasMoreThanTwoChoices = hasMoreThanTwoChoices;
+            ActualNumberOfChoices = hasMoreThanTwoChoices ? numberOfChoices : 2;
 
             AlsoExecutesWhenDisabled = !onlyExecuteWhenEnabled;
 
@@ -114,7 +120,7 @@ namespace HVR.Basis.Vixxy.Runtime
             GadgetElement = ScriptableObject.CreateInstance<P12SettableFloatElement>();
             GadgetElement.localizedTitle = gameObject.name;
             GadgetElement.min = 0f;
-            GadgetElement.max = 1f;
+            GadgetElement.max = HasMoreThanTwoChoices ? (ActualNumberOfChoices - 1) : 1f;
             GadgetElement.displayAs = P12SettableFloatElement.P12UnitDisplayKind.Toggle; // TODO: This depends on the type of control.
             GadgetElement.defaultValue = _bakedDefaultValue;
             GadgetElement.storedValue = _bakedDefaultValue;
@@ -379,6 +385,11 @@ namespace HVR.Basis.Vixxy.Runtime
                 {
                     var propertyInfoNullable = GetPropertyInfoOrNull(foundType, property.propertyName);
                     if (propertyInfoNullable == null) return P12VixxyPropertyBakeResult.NoFieldNorPropertyMatches;
+                    
+                    if (typeof(Array).IsAssignableFrom(propertyInfoNullable.PropertyType))
+                    {
+                        
+                    }
 
                     property.TPropertyIfMarkedAsTPropertyAccess = propertyInfoNullable;
                     property.KindMarker = P12KindMarker.PropertyAccess;
@@ -430,11 +441,25 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public void Actuate()
         {
-            // FIXME: We really need to figure out how actuators sample values from their dependents.
-            var linear01 = Mathf.InverseLerp(lowerBound, upperBound, sample.storedValue);
-            var active01 = interpolationCurve.Evaluate(linear01);
-            ActuateActivations(active01);
-            ActuateSubjects(active01);
+            if (!HasMoreThanTwoChoices)
+            {
+                // FIXME: We really need to figure out how actuators sample values from their dependents.
+                var linear01 = Mathf.InverseLerp(lowerBound, upperBound, sample.storedValue);
+                var active01 = interpolationCurve.Evaluate(linear01);
+                ActuateActivations(active01);
+                ActuateSubjects(active01);
+            }
+            else
+            {
+                int storedIntValue = Mathf.RoundToInt(sample.storedValue);
+                int outValue;
+                if (storedIntValue < 0) outValue = 0;
+                else if (storedIntValue >= ActualNumberOfChoices) outValue = ActualNumberOfChoices - 1;
+                else outValue = storedIntValue;
+                
+                SetActivation(outValue);
+                SetSubjects(outValue);
+            }
         }
 
         private void ActuateActivations(float active01)
@@ -461,6 +486,19 @@ namespace HVR.Basis.Vixxy.Runtime
             }
         }
 
+        private void SetActivation(int choice)
+        {
+            // TODO: Bake activations in Awake, so that we may remove components that were destroyed without affecting the serialized state of the control.
+            foreach (var activation in activations)
+            {
+                // Defensive check in case of external destruction.
+                if (null != activation.component)
+                {
+                    H12Utilities.SetToggleState(activation.component, activation.choices[choice]);
+                }
+            }
+        }
+
         private void ActuateSubjects(float active01)
         {
             foreach (var subject in subjects)
@@ -476,70 +514,16 @@ namespace HVR.Basis.Vixxy.Runtime
                     var propertyNeedsCleanup = false;
                     object lerpValue = property switch
                     {
-                        P12VixxyProperty<float> valueFloat => Mathf.Lerp(valueFloat.unbound, valueFloat.bound, active01),
-                        P12VixxyProperty<Color> valueColor => Color.Lerp(valueColor.unbound, valueColor.bound, active01),
-                        P12VixxyProperty<Vector4> valueVector4 => Vector4.Lerp(valueVector4.unbound, valueVector4.bound, active01),
-                        P12VixxyProperty<Vector3> valueVector3 => Vector3.Lerp(valueVector3.unbound, valueVector3.bound, active01),
+                        P12VixxyProperty<float> valueFloat => Mathf.Lerp(valueFloat.InactiveValue, valueFloat.ActiveValue, active01),
+                        P12VixxyPropertyColor valueColor => valueColor.interpolation == P12VixxyPropertyColorInterpolation.Oklab
+                            ? H12ColorInterpolation.OklabLerp(valueColor.InactiveValue, valueColor.ActiveValue, active01)
+                            : Color.Lerp(valueColor.InactiveValue, valueColor.ActiveValue, active01),
+                        P12VixxyProperty<Color> valueColor => H12ColorInterpolation.OklabLerp(valueColor.InactiveValue, valueColor.ActiveValue, active01),
+                        P12VixxyProperty<Vector4> valueVector4 => Vector4.Lerp(valueVector4.InactiveValue, valueVector4.ActiveValue, active01),
+                        P12VixxyProperty<Vector3> valueVector3 => Vector3.Lerp(valueVector3.InactiveValue, valueVector3.ActiveValue, active01),
                         _ => null
                     };
-                    foreach (var component in property.FoundComponents)
-                    {
-                        // Defensive check in case of external destruction.
-                        if (null != component)
-                        {
-                            switch (property.KindMarker)
-                            {
-                                case P12KindMarker.AffectsMaterialPropertyBlock:
-                                {
-                                    var materialPropertyBlock = orchestrator.GetMaterialPropertyBlockForBakedObject(component.gameObject);
-                                    // TODO: Instead of checking the type, use something like property.ApplyMaterialProperty(materialPropertyBlock, value), where the property itself knows how to apply it to the property block.
-                                    switch (lerpValue)
-                                    {
-                                        case float lerpFloatValue: materialPropertyBlock.SetFloat(property.ShaderMaterialProperty, lerpFloatValue); break;
-                                        case Color lerpColorValue: materialPropertyBlock.SetColor(property.ShaderMaterialProperty, lerpColorValue); break;
-                                        case Vector4 lerpVector4Value: materialPropertyBlock.SetVector(property.ShaderMaterialProperty, lerpVector4Value); break;
-                                        case Vector3 lerpVector3Value: materialPropertyBlock.SetVector(property.ShaderMaterialProperty, lerpVector3Value); break;
-                                        // TODO: Other types
-                                    }
-                                    orchestrator.StagePropertyBlock(component.gameObject);
-                                    break;
-                                }
-                                case P12KindMarker.BlendShape:
-                                {
-                                    if (lerpValue is float lerpFloatValue)
-                                    {
-                                        var smr = (SkinnedMeshRenderer)component;
-                                        var blendShapeIndex = property.SmrToBlendshapeIndex[smr];
-                                        smr.SetBlendShapeWeight(blendShapeIndex, lerpFloatValue);
-                                    }
-                                    break;
-                                }
-                                case P12KindMarker.FieldAccess:
-                                {
-                                    var fieldInfo = property.FieldIfMarkedAsFieldAccess;
-                                    fieldInfo.SetValue(component, lerpValue);
-                                    orchestrator.StagePossibleSpecialComponentHandling(component);
-                                    break;
-                                }
-                                case P12KindMarker.PropertyAccess:
-                                {
-                                    var propertyInfo = property.TPropertyIfMarkedAsTPropertyAccess;
-                                    propertyInfo.SetValue(component, lerpValue);
-                                    orchestrator.StagePossibleSpecialComponentHandling(component);
-                                    break;
-                                }
-                                case P12KindMarker.Undefined:
-                                default:
-                                    throw new ArgumentException("We tried to access an Undefined property, but Undefined properties are not supposed" +
-                                                                " to be valid if the property IsApplicable. This may be a programming error, did we" +
-                                                                " properly check that the property IsApplicable?");
-                            }
-                        }
-                        else
-                        {
-                            propertyNeedsCleanup = true;
-                        }
-                    }
+                    Apply(property, lerpValue, out propertyNeedsCleanup);
 
                     if (propertyNeedsCleanup)
                     {
@@ -550,6 +534,104 @@ namespace HVR.Basis.Vixxy.Runtime
                             // TODO: Also invalidate the subject if no property of that subject is applicable
                         }
                     }
+                }
+            }
+        }
+
+        private void SetSubjects(int choice)
+        {
+            foreach (var subject in subjects)
+            {
+                // TODO: Rather than do that check every time, only keep applicable subjects into an internal field.
+                if (!subject.IsApplicable) continue;
+
+                foreach (var property in subject.properties)
+                {
+                    // TODO: Rather than do that check every time, bake the applicable properties into an internal field.
+                    if (!property.IsApplicable) continue;
+
+                    object lerpValue = property switch
+                    {
+                        P12VixxyProperty<float> valueFloat => valueFloat.choices[choice],
+                        P12VixxyProperty<Color> valueColor => valueColor.choices[choice],
+                        P12VixxyProperty<Vector4> valueVector4 => valueVector4.choices[choice],
+                        P12VixxyProperty<Vector3> valueVector3 => valueVector3.choices[choice],
+                        _ => null
+                    };
+                    Apply(property, lerpValue, out var propertyNeedsCleanup);
+
+                    if (propertyNeedsCleanup)
+                    {
+                        H12Utilities.RemoveDestroyedFromList(property.FoundComponents);
+                        if (property.FoundComponents.Count == 0)
+                        {
+                            property.IsApplicable = false;
+                            // TODO: Also invalidate the subject if no property of that subject is applicable
+                        }
+                    }
+                }
+            }
+        }
+
+        private void Apply(P12VixxyPropertyBase property, object resolvedValue, out bool propertyNeedsCleanup)
+        {
+            propertyNeedsCleanup = false;
+            foreach (var component in property.FoundComponents)
+            {
+                // Defensive check in case of external destruction.
+                if (null != component)
+                {
+                    switch (property.KindMarker)
+                    {
+                        case P12KindMarker.AffectsMaterialPropertyBlock:
+                        {
+                            var materialPropertyBlock = orchestrator.GetMaterialPropertyBlockForBakedObject(component.gameObject);
+                            // TODO: Instead of checking the type, use something like property.ApplyMaterialProperty(materialPropertyBlock, value), where the property itself knows how to apply it to the property block.
+                            switch (resolvedValue)
+                            {
+                                case float lerpFloatValue: materialPropertyBlock.SetFloat(property.ShaderMaterialProperty, lerpFloatValue); break;
+                                case Color lerpColorValue: materialPropertyBlock.SetColor(property.ShaderMaterialProperty, lerpColorValue); break;
+                                case Vector4 lerpVector4Value: materialPropertyBlock.SetVector(property.ShaderMaterialProperty, lerpVector4Value); break;
+                                case Vector3 lerpVector3Value: materialPropertyBlock.SetVector(property.ShaderMaterialProperty, lerpVector3Value); break;
+                                // TODO: Other types
+                            }
+                            orchestrator.StagePropertyBlock(component.gameObject);
+                            break;
+                        }
+                        case P12KindMarker.BlendShape:
+                        {
+                            if (resolvedValue is float lerpFloatValue)
+                            {
+                                var smr = (SkinnedMeshRenderer)component;
+                                var blendShapeIndex = property.SmrToBlendshapeIndex[smr];
+                                smr.SetBlendShapeWeight(blendShapeIndex, lerpFloatValue);
+                            }
+                            break;
+                        }
+                        case P12KindMarker.FieldAccess:
+                        {
+                            var fieldInfo = property.FieldIfMarkedAsFieldAccess;
+                            fieldInfo.SetValue(component, resolvedValue);
+                            orchestrator.StagePossibleSpecialComponentHandling(component);
+                            break;
+                        }
+                        case P12KindMarker.PropertyAccess:
+                        {
+                            var propertyInfo = property.TPropertyIfMarkedAsTPropertyAccess;
+                            propertyInfo.SetValue(component, resolvedValue);
+                            orchestrator.StagePossibleSpecialComponentHandling(component);
+                            break;
+                        }
+                        case P12KindMarker.Undefined:
+                        default:
+                            throw new ArgumentException("We tried to access an Undefined property, but Undefined properties are not supposed" +
+                                                        " to be valid if the property IsApplicable. This may be a programming error, did we" +
+                                                        " properly check that the property IsApplicable?");
+                    }
+                }
+                else
+                {
+                    propertyNeedsCleanup = true;
                 }
             }
         }
@@ -597,6 +679,7 @@ namespace HVR.Basis.Vixxy.Runtime
     /// code explaining why the property is not applicable.
     internal enum P12VixxyPropertyBakeResult
     {
+        WasNotEvaluated,
         Success,
         SubjectHasNoBakedObjects,
         TypeNotFound,
@@ -609,6 +692,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
     internal enum P12VixxySubjectsBakeResult
     {
+        WasNotEvaluated,
         Success,
         NoBakedObjects,
         NoPropertyIsApplicable

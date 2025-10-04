@@ -14,7 +14,7 @@ namespace HVR.Basis.Vixxy.Editor
             {
                 if (gadget is P12SettableFloatElement floatElement)
                 {
-                    var slider = EditorGUILayout.Slider(new GUIContent(floatElement.localizedTitle), floatElement.storedValue, 0f, 1f);
+                    var slider = EditorGUILayout.Slider(new GUIContent(floatElement.localizedTitle), floatElement.storedValue, floatElement.min, floatElement.max);
                     if (slider != floatElement.storedValue)
                     {
                         floatElement.storedValue = slider;
