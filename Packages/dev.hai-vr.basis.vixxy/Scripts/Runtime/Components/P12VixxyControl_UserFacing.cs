@@ -23,10 +23,13 @@ namespace HVR.Basis.Vixxy.Runtime
         [SerializeField] internal P12VixxyActivation[] activations = Array.Empty<P12VixxyActivation>();
         [SerializeField] internal P12VixxySubject[] subjects = Array.Empty<P12VixxySubject>();
 
-        /// The value that is considered to be OFF. This may be larger than upperBound.
+        /// The value that is considered to be OFF. This may be larger than upperBound. (Irrelevant when there are more than two choices)
         [SerializeField] internal float lowerBound = 0f;
-        /// The value that is considered to be ON.
+        /// The value that is considered to be ON. (Irrelevant when there are more than two choices)
         [SerializeField] internal float upperBound = 1f;
+
+        // The number of seconds it takes to go from 0.0 to 1.0. If there are more than two choices: The number of seconds it takes to go from one state to another.
+        [SerializeField] internal float interpolationDurationSeconds = 0f;
         [SerializeField] internal AnimationCurve interpolationCurve = AnimationCurve.EaseInOut(0, 0, 1, 1);
 
         // Menu and Networking
@@ -45,6 +48,8 @@ namespace HVR.Basis.Vixxy.Runtime
         [SerializeField] internal string rememberTag = "";
         /// IF NOT ADVANCED MENU MODE: If set to true, this value will be sent to other users whenever it is changed, or when the avatar loads.
         [SerializeField] internal bool networked = true;
+        /// IF NOT ADVANCED MENU MODE: 
+        [SerializeField] internal P12VixxyNetworkingType advancedNetworking = P12VixxyNetworkingType.Automatic;
         
         /// If true, we only run the logic of this control if it's enabled. By default, this is false, so that users can put a toggle control
         /// directly inside the component hierarchy that is being toggled OFF.
@@ -124,6 +129,30 @@ namespace HVR.Basis.Vixxy.Runtime
         /// We remember the value for this address across all avatars.
         RememberAcrossAvatars
     }
+    
+    [Serializable]
+    public enum P12VixxyNetworkingType
+    {
+        Automatic,
+        ContinuousAutomatedDataStream
+    }
+
+    [Serializable]
+    public class P12VixxyVariabilization<T>
+    {
+        public bool isValue;
+        
+        /// null or default if isValue is false.
+        public T value;
+        
+        // null if isValue is true.
+        public I12VixxyVariabilized<T> variabilized;
+    }
+
+    public interface I12VixxyVariabilized<T>
+    {
+        T Get();
+    }
 
     [Serializable]
     public class P12VixxyProperty<T> : P12VixxyPropertyBase
@@ -132,6 +161,30 @@ namespace HVR.Basis.Vixxy.Runtime
 
         public T InactiveValue => choices[InactiveIndex];
         public T ActiveValue => choices[ActiveIndex];
+        
+        public override bool ValidateBasedOnNumberOfChoices(int actualNumberOfChoices) => choices.Length >= actualNumberOfChoices;
+
+        public override void PruneArrays(int actualNumberOfChoices)
+        {
+            var newChoices = new T[actualNumberOfChoices];
+            for (var i = 0; i < actualNumberOfChoices; i++)
+            {
+                if (i < choices.Length)
+                {
+                    newChoices[i] = choices[i];
+                }
+                else
+                {
+                    var k = choices.Length - 1;
+                    if (k <= 0)
+                    {
+                        newChoices[i] = choices[k];
+                    }
+                }
+            }
+            
+            choices = newChoices;
+        }
     }
 
     [Serializable]
@@ -146,7 +199,7 @@ namespace HVR.Basis.Vixxy.Runtime
         public P12VixxyPropertyVariant variant;
         public string propertyName;
 
-        public bool flip;
+        [Obsolete] public bool flip;
 
         // Runtime only
         [NonSerialized] internal bool IsApplicable;
@@ -158,6 +211,9 @@ namespace HVR.Basis.Vixxy.Runtime
         [NonSerialized] internal FieldInfo FieldIfMarkedAsFieldAccess; // null if SpecialMarker is not FieldAccess
         [NonSerialized] internal PropertyInfo TPropertyIfMarkedAsTPropertyAccess; // null if SpecialMarker is not PropertyAccess
         [NonSerialized] internal Dictionary<SkinnedMeshRenderer, int> SmrToBlendshapeIndex; // null if SpecialMarker is not BlendShape
+
+        public virtual bool ValidateBasedOnNumberOfChoices(int actualNumberOfChoices) => true;
+        public virtual void PruneArrays(int actualNumberOfChoices) {}
     }
 
     [Serializable]

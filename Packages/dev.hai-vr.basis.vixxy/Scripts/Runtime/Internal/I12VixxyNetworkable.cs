@@ -2,13 +2,7 @@
 {
     public interface I12VixxyNetworkable
     {
-        void RequireNetworked(string address, float defaultValue, P12VixxyNetDataUsage netDataUsage);
-    }
-
-    public enum P12VixxyNetDataUsage
-    {
-        Bit,
-        Analog8Bits
+        void RequireNetworked(string address, float defaultValue);
     }
 
     public enum P12VixxyNetMessageType

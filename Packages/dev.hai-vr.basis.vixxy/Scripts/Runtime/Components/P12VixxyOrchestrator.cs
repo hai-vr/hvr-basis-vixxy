@@ -300,7 +300,7 @@ namespace HVR.Basis.Vixxy.Runtime
             acquisitionService.Submit(HVRAddress.AddressToId(address), newValue);
         }
 
-        public void RequireNetworked(string address, float bakedDefaultValue, P12VixxyNetDataUsage netDataUsage)
+        public void RequireNetworked(string address, float bakedDefaultValue, P12VixxyNetworkingType networkingType)
         {
             // networking.RequireNetworked(address, bakedDefaultValue, netDataUsage);
         }

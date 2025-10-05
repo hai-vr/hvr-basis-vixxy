@@ -7,6 +7,7 @@ namespace HVR.Basis.Vixxy.Editor
     [CustomEditor(typeof(P12VixxyControl))]
     public class P12VixxyControlEditor : UnityEditor.Editor
     {
+        internal static readonly Color PreviewColor = new Color(0.65f, 1f, 0.56f);
         internal static readonly Color RuntimeColorOK = Color.cyan;
         internal static readonly Color RuntimeColorKO = new Color(1f, 0.72f, 0f);
         private const string MsgCannotEditInPlayMode = "Editing this component during Play Mode can lead to different visual and scene results than editing the component in Edit Mode.";

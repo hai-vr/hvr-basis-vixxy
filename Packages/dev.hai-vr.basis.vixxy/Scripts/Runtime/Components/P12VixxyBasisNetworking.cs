@@ -87,7 +87,7 @@ namespace HVR.Basis.Vixxy.Runtime
             throw new NotImplementedException();
         }
 
-        public void RequireNetworked(string address, float defaultValue, P12VixxyNetDataUsage netDataUsage)
+        public void RequireNetworked(string address, float defaultValue)
         {
         }
     }

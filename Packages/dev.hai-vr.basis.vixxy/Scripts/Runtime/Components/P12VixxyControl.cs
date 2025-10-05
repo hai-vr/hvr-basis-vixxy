@@ -38,10 +38,17 @@ namespace HVR.Basis.Vixxy.Runtime
         [NonSerialized] internal P12VixxyRememberScope Remember;
         [NonSerialized] internal string RememberTagNullable;
         [NonSerialized] internal bool IsInitialized;
-        [NonSerialized] internal bool Networked;
         [NonSerialized] internal bool WasAvatarReadyApplied;
         [NonSerialized] internal bool IsWearer;
         [NonSerialized] internal bool AlsoExecutesWhenDisabled;
+
+        [NonSerialized] internal bool Networked;
+        [NonSerialized] internal P12VixxyNetworkingType NetworkingType;
+        
+        [SerializeField] internal bool InterpolateFromChoiceApplies; // Only serializable for debug purposes
+        [SerializeField] internal int InterpolateFromChoice; // Only serializable for debug purposes
+        [SerializeField] internal float InterpolateFromChoiceAmount01; // Only serializable for debug purposes
+        
 
         public void Awake()
         {
@@ -67,9 +74,13 @@ namespace HVR.Basis.Vixxy.Runtime
             Address = string.IsNullOrWhiteSpace(address) ? GenerateAddressFromPath() : address;
             _iddress = HVRAddress.AddressToId(Address);
 
-            var hasMoreThanTwoChoices = hasThreeOrMoreChoices && numberOfChoices > 2;
+            FigureOutActualNumberOfChoices(out var hasMoreThanTwoChoices, out var actualNumberOfChoices);
             HasMoreThanTwoChoices = hasMoreThanTwoChoices;
-            ActualNumberOfChoices = hasMoreThanTwoChoices ? numberOfChoices : 2;
+            ActualNumberOfChoices = actualNumberOfChoices;
+
+            InterpolateFromChoiceApplies = false;
+            InterpolateFromChoice = 0;
+            InterpolateFromChoiceAmount01 = 0f;
 
             AlsoExecutesWhenDisabled = !onlyExecuteWhenEnabled;
 
@@ -80,6 +91,7 @@ namespace HVR.Basis.Vixxy.Runtime
                     Remember = P12VixxyRememberScope.RememberAcrossAvatars;
                     RememberTagNullable = null;
                     Networked = true;
+                    NetworkingType = P12VixxyNetworkingType.Automatic;
                     break;
                 }
                 case P12VixxyControlMode.Advanced:
@@ -103,6 +115,7 @@ namespace HVR.Basis.Vixxy.Runtime
                         Remember = remember;
                     }
                     Networked = networked;
+                    NetworkingType = networked ? advancedNetworking : P12VixxyNetworkingType.Automatic;
                     break;
                 }
                 default:
@@ -138,8 +151,7 @@ namespace HVR.Basis.Vixxy.Runtime
 
             if (Networked)
             {
-                var netDataUsage = P12VixxyNetDataUsage.Bit; // TODO: This depends on the type of control.
-                orchestrator.RequireNetworked(Address, _bakedDefaultValue, netDataUsage);
+                orchestrator.RequireNetworked(Address, _bakedDefaultValue, NetworkingType);
             }
 
             IsInitialized = true;
@@ -147,6 +159,12 @@ namespace HVR.Basis.Vixxy.Runtime
             {
                 _registeredActuator = orchestrator.RegisterActuator(_iddress, this, OnImplicitAddressUpdated);
             }
+        }
+
+        private void FigureOutActualNumberOfChoices(out bool hasMoreThanTwoChoices, out int actualNumberOfChoices)
+        {
+            hasMoreThanTwoChoices = hasThreeOrMoreChoices && numberOfChoices > 2;
+            actualNumberOfChoices = hasMoreThanTwoChoices ? numberOfChoices : 2;
         }
 
         public void OnHVRReadyBothAvatarAndNetwork(bool isWearer)
@@ -306,6 +324,10 @@ namespace HVR.Basis.Vixxy.Runtime
         private P12VixxyPropertyBakeResult BakeProperty(P12VixxyPropertyBase property, P12VixxySubject subject)
         {
             if (!H12ComponentDictionary.TryGetComponentType(property.fullClassName, out var foundType)) return P12VixxyPropertyBakeResult.TypeNotFound;
+            if (!property.ValidateBasedOnNumberOfChoices(ActualNumberOfChoices))
+            {
+                return P12VixxyPropertyBakeResult.InconsistentNumberOfChoices;
+            }
 
             var affectsMaterialPropertyBlock = property.variant == P12VixxyPropertyVariant.MaterialProperty;
             var affectsBlendShape = property.variant == P12VixxyPropertyVariant.BlendShape;
@@ -447,7 +469,7 @@ namespace HVR.Basis.Vixxy.Runtime
                 var linear01 = Mathf.InverseLerp(lowerBound, upperBound, sample.storedValue);
                 var active01 = interpolationCurve.Evaluate(linear01);
                 ActuateActivations(active01);
-                ActuateSubjects(active01);
+                ActuateSubjects(active01, P12VixxyPropertyBase.InactiveIndex, P12VixxyPropertyBase.ActiveIndex);
             }
             else
             {
@@ -456,9 +478,17 @@ namespace HVR.Basis.Vixxy.Runtime
                 if (storedIntValue < 0) outValue = 0;
                 else if (storedIntValue >= ActualNumberOfChoices) outValue = ActualNumberOfChoices - 1;
                 else outValue = storedIntValue;
-                
-                SetActivation(outValue);
-                SetSubjects(outValue);
+
+                if (!InterpolateFromChoiceApplies)
+                {
+                    SetActivation(outValue);
+                    SetSubjects(outValue);
+                }
+                else
+                {
+                    ActuateActivationsBasedOnChoices(InterpolateFromChoiceAmount01, InterpolateFromChoice, outValue);
+                    ActuateSubjects(InterpolateFromChoiceAmount01, InterpolateFromChoice, outValue);
+                }
             }
         }
 
@@ -486,6 +516,39 @@ namespace HVR.Basis.Vixxy.Runtime
             }
         }
 
+        private void ActuateActivationsBasedOnChoices(float active01, int inactive, int active)
+        {
+            // TODO: Bake activations in Awake, so that we may remove components that were destroyed without affecting the serialized state of the control.
+            foreach (var activation in activations)
+            {
+                // Defensive check in case of external destruction.
+                if (null != activation.component)
+                {
+                    var inactivity = activation.choices[inactive];
+                    var activity = activation.choices[active];
+                    if (inactivity == activity)
+                    {
+                        H12Utilities.SetToggleState(activation.component, inactivity);
+                    }
+                    else
+                    {
+                        var target = activity ? 1f : 0f;
+                        switch (activation.threshold)
+                        {
+                            case ActivationThreshold.Blended:
+                                H12Utilities.SetToggleState(activation.component, Mathf.Abs(target - active01) < 1f);
+                                break;
+                            case ActivationThreshold.Strict:
+                                H12Utilities.SetToggleState(activation.component, Mathf.Approximately(target, active01));
+                                break;
+                            default:
+                                throw new ArgumentOutOfRangeException();
+                        }
+                    }
+                }
+            }
+        }
+
         private void SetActivation(int choice)
         {
             // TODO: Bake activations in Awake, so that we may remove components that were destroyed without affecting the serialized state of the control.
@@ -499,7 +562,7 @@ namespace HVR.Basis.Vixxy.Runtime
             }
         }
 
-        private void ActuateSubjects(float active01)
+        private void ActuateSubjects(float active01, int inactiveIndex, int activeIndex)
         {
             foreach (var subject in subjects)
             {
@@ -514,13 +577,13 @@ namespace HVR.Basis.Vixxy.Runtime
                     var propertyNeedsCleanup = false;
                     object lerpValue = property switch
                     {
-                        P12VixxyProperty<float> valueFloat => Mathf.Lerp(valueFloat.InactiveValue, valueFloat.ActiveValue, active01),
+                        P12VixxyProperty<float> valueFloat => Mathf.Lerp(valueFloat.choices[inactiveIndex], valueFloat.choices[activeIndex], active01),
                         P12VixxyPropertyColor valueColor => valueColor.interpolation == P12VixxyPropertyColorInterpolation.Oklab
-                            ? H12ColorInterpolation.OklabLerp(valueColor.InactiveValue, valueColor.ActiveValue, active01)
-                            : Color.Lerp(valueColor.InactiveValue, valueColor.ActiveValue, active01),
-                        P12VixxyProperty<Color> valueColor => H12ColorInterpolation.OklabLerp(valueColor.InactiveValue, valueColor.ActiveValue, active01),
-                        P12VixxyProperty<Vector4> valueVector4 => Vector4.Lerp(valueVector4.InactiveValue, valueVector4.ActiveValue, active01),
-                        P12VixxyProperty<Vector3> valueVector3 => Vector3.Lerp(valueVector3.InactiveValue, valueVector3.ActiveValue, active01),
+                            ? H12ColorInterpolation.OklabLerp(valueColor.choices[inactiveIndex], valueColor.choices[activeIndex], active01)
+                            : Color.Lerp(valueColor.choices[inactiveIndex], valueColor.choices[activeIndex], active01),
+                        P12VixxyProperty<Color> valueColor => H12ColorInterpolation.OklabLerp(valueColor.choices[inactiveIndex], valueColor.choices[activeIndex], active01),
+                        P12VixxyProperty<Vector4> valueVector4 => Vector4.Lerp(valueVector4.choices[inactiveIndex], valueVector4.choices[activeIndex], active01),
+                        P12VixxyProperty<Vector3> valueVector3 => Vector3.Lerp(valueVector3.choices[inactiveIndex], valueVector3.choices[activeIndex], active01),
                         _ => null
                     };
                     Apply(property, lerpValue, out propertyNeedsCleanup);
@@ -636,6 +699,20 @@ namespace HVR.Basis.Vixxy.Runtime
             }
         }
 
+        /// Asks this component to optimize itself by pruning unused arrays. Calling this will get rid of material references on choices that are
+        /// hidden when the number of choices in a control has been reduced.
+        public void OptimizePruneArrays()
+        {
+            FigureOutActualNumberOfChoices(out _, out var actualNumberOfChoices);
+            foreach (var subject in subjects)
+            {
+                foreach (var propertyBase in subject.properties)
+                {
+                    propertyBase.PruneArrays(actualNumberOfChoices);
+                }
+            }
+        }
+
         private static FieldInfo GetFieldInfoOrNull(Type foundType, string propertyName)
         {
             var fields = foundType.GetFields(BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
@@ -683,6 +760,7 @@ namespace HVR.Basis.Vixxy.Runtime
         Success,
         SubjectHasNoBakedObjects,
         TypeNotFound,
+        InconsistentNumberOfChoices,
         NoObjectsHasThatComponent,
         MaterialPropertyBlockCanOnlyBeUsedOnRenderers,
         BlendShapeCanOnlyBeUsedOnSkinnedMeshRenderers,

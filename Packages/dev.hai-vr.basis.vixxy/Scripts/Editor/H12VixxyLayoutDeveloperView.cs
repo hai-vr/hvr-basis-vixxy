@@ -44,8 +44,49 @@ namespace HVR.Basis.Vixxy.Editor
             }
             EditorGUI.EndDisabledGroup();
 
+            if (!isPlaying)
+            {
+                my.InterpolateFromChoiceApplies = false;
+                my.InterpolateFromChoice = 0;
+                my.InterpolateFromChoiceAmount01 = 0f;
+            }
+            
             if (isPlaying)
             {
+                if (my.IsInitialized)
+                {
+                    HaiEFCommon.ColoredBackgroundVoid(true, P12VixxyControlEditor.PreviewColor, () =>
+                    {
+                        EditorGUILayout.BeginVertical(H12UiHelpers.GroupBoxStyle);
+                        if (my.HasMoreThanTwoChoices)
+                        {
+                            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(P12VixxyControl.InterpolateFromChoiceApplies)));
+                            EditorGUILayout.PropertyField(serializedObject.FindProperty(nameof(P12VixxyControl.InterpolateFromChoice)));
+                            EditorGUILayout.Slider(serializedObject.FindProperty(nameof(P12VixxyControl.InterpolateFromChoiceAmount01)), 0f, 1f);
+                        }
+                        EditorGUI.BeginDisabledGroup(true);
+                        EditorGUILayout.TextField(nameof(P12VixxyControl.Address), my.Address);
+                        EditorGUI.EndDisabledGroup();
+                        if (my.HasMoreThanTwoChoices)
+                        {
+                            var slider = EditorGUILayout.IntSlider((int)my.GadgetElement.storedValue, (int)my.GadgetElement.min, (int)my.GadgetElement.max);
+                            if (slider != my.GadgetElement.storedValue)
+                            {
+                                my.GadgetElement.storedValue = slider;
+                            }
+                        }
+                        else
+                        {
+                            var slider = EditorGUILayout.Slider(my.GadgetElement.storedValue, my.GadgetElement.min, my.GadgetElement.max);
+                            if (slider != my.GadgetElement.storedValue)
+                            {
+                                my.GadgetElement.storedValue = slider;
+                            }
+                        }
+                        EditorGUILayout.EndVertical();
+                    });
+                }
+
                 HaiEFCommon.ColoredBackgroundVoid(true, P12VixxyControlEditor.RuntimeColorOK, () =>
                 {
                     EditorGUILayout.BeginVertical(H12UiHelpers.GroupBoxStyle);
@@ -57,14 +98,6 @@ namespace HVR.Basis.Vixxy.Editor
                     }
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.IsWearer), my.IsWearer);
                     EditorGUILayout.TextField(nameof(P12VixxyControl.Address), my.Address);
-                    if (my.IsInitialized)
-                    {
-                        var slider = EditorGUILayout.Slider(my.GadgetElement.storedValue, my.GadgetElement.min, my.GadgetElement.max);
-                        if (slider != my.GadgetElement.storedValue)
-                        {
-                            my.GadgetElement.storedValue = slider;
-                        }
-                    }
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.HasMoreThanTwoChoices), my.HasMoreThanTwoChoices);
                     EditorGUILayout.IntField(nameof(P12VixxyControl.ActualNumberOfChoices), my.ActualNumberOfChoices);
                     EditorGUILayout.Toggle(nameof(P12VixxyControl.AlsoExecutesWhenDisabled), my.AlsoExecutesWhenDisabled);
@@ -217,7 +250,10 @@ namespace HVR.Basis.Vixxy.Editor
             EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.fullClassName)));
             EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.variant)));
             EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.propertyName)));
-            EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.flip)));
+            if (!my.hasThreeOrMoreChoices)
+            {
+                EditorGUILayout.PropertyField(propertySp.FindPropertyRelative(nameof(P12VixxyPropertyBase.flip)));
+            }
             if (inheritsFromVixxyProperty)
             {
                 var choicesSp = propertySp.FindPropertyRelative(nameof(P12VixxyProperty<object>.choices));
